@@ -7,11 +7,25 @@
 
 remove_old_segments = False
 
-## Remember that every line changes the string, so if you want to change "apple tree" to "strawberry bush",
-# first changing "tree" to "bush" and only then changing "apple tree" to "strawberry bush" is a bad idea.
+## The target language "tuv" element has got a few attributes, which you may or may not want to alter.
+# Set to "True" (WITHOUT quotation marks) if you want to update these two attributes to "now":
+
+change_creationdate = False
+change_changedate = True
+
+# Set to "'John Doe'" (WITH quotation marks) if you want to change these attributes to "John Doe",
+# or set to "None" (WITHOUT quotation marks) if you want the attributes unchanged:
+
+change_creationid = None
+change_changeid = None
+
+## Remember that every line changes the string, so if you want to change "strawberry" to "apple",
+# and "strawberries" to "apples", changing the first before the second is a bad idea.
+# The last element of each list is "True", if it is for a target languague.
 
 regex_substrings_to_change = [
-    ["en-GB", r"\bC\b", "D"] # Don't forget to add a comma if you have more elements!
+    ["en-GB", r"\bC\b", "D", False],
+    ["nl-NL", r"\bC\b", "D", True] # Don't forget to add a comma if you have more elements!
 ]
 
 ###########################################################################################################
@@ -35,7 +49,6 @@ def select_files():
 
 
 def inspect_segments(input_file):
-    
     tree = ET.parse(input_file)
     body = tree.getroot()[1]
     alternative_translations_comment_inserted = False
@@ -75,17 +88,28 @@ def inspect_segments(input_file):
 def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_of_tu):
     new_segment_text = segment_text
     for to_check_substring in regex_substrings_to_change:
+        changes_made_now = False
         if (language == to_check_substring[0] and (re.search(to_check_substring[1], segment_text) != None)):
             retain_copy_of_tu = True
+            changes_made_now = True
             new_segment_text = re.sub(to_check_substring[1], to_check_substring[2], new_segment_text)
 
-    if (retain_copy_of_tu):
+    if (changes_made_now):
         copy_of_tu[x][y].text = new_segment_text
-        if (language == "nl-NL"):
-            now = datetime.now()
-            nowstring = now.strftime('%Y%m%dT%H%M%SZ')
-            copy_of_tu[x].set('creationdate', nowstring)
-            copy_of_tu[x].set('changedate', nowstring)
+        if (to_check_substring[3]):
+            if (change_creationdate):
+                now = datetime.now()
+                nowstring = now.strftime('%Y%m%dT%H%M%SZ')
+                copy_of_tu[x].set('creationdate', nowstring)
+            if (change_changedate):
+                now = datetime.now()
+                nowstring = now.strftime('%Y%m%dT%H%M%SZ')
+                copy_of_tu[x].set('changedate', nowstring)
+            if (change_creationid):
+                copy_of_tu[x].set('creationid', change_creationid)
+            if (change_changeid):
+                copy_of_tu[x].set('creationid', change_changeid)
+            
         return True
     else:
         return False

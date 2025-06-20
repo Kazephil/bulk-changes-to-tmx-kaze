@@ -54,12 +54,30 @@ Obviously, the files will appear in the directory `output`.
 ### remove_old_segments
 If you want to **replace** segments, make sure `remove_old_segments` is `True`. If it is `False`, the new segments will simply be added to the existing memory.
 
+### change_...
+The target language `<tuv>` tags have some attributes, , which you may or may not want to alter:
+```
+# Set to "True" (WITHOUT quotation marks) if you want to update these two attributes to "now":
+
+change_creationdate = False
+change_changedate = True
+
+# Set to "'John Doe'" (WITH quotation marks) if you want to change these attributes to "John Doe",
+# or set to "None" (WITHOUT quotation marks) if you want the attributes unchanged:
+
+change_creationid = None
+change_changeid = None
+```
+
 ### regex_substrings_to_change
-This list should contain more lists, where the first element is the language of the `tuv` tag, the second element the regex substring that will be searched, the third element is the substring that will replace the substring that was found (i.e. the second element).
+This list should contain more lists, where the first element is the language of the `tuv` tag, the second element the regex substring that will be searched, the third element is the substring that will replace the substring that was found (i.e. the second element), the last element is "True" if if is for a source language (in which case attributes can be changed).
+
+Remember that every line changes the string, so if you want to change "strawberry" to "apple", and "strawberries" to "apples", changing the first before the second is a bad idea. Then you'll get results like `strawberrys`. Reading up on regex is a good idea, so you know how to filter out instances where C is not part of a word.
 
 If you want to change `D` to `C` in the segments in the language `en-GB`, this is what the list should look like:
 ```
 regex_substrings_to_change = [
-    ["en-GB", r"\bC\b", "D"] // Don't forget to add a comma if you have more elements!
+    ["en-GB", r"\bC\b", "D", False],
+    ["nl-NL", r"\bC\b", "D", True] # Don't forget to add a comma if you have more elements!
 ]
 ```
