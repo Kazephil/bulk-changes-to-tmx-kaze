@@ -51,6 +51,7 @@ def select_files():
 def inspect_segments(input_file):
     tree = ET.parse(input_file)
     body = tree.getroot()[1]
+    tree.getroot().attrib["version"] = "1.4"
     alternative_translations_comment_inserted = False
     position = 0
     for tu in body:
@@ -114,6 +115,6 @@ def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_o
     else:
         return False
 
-
+    
 if __name__ == "__main__":
     select_files()
