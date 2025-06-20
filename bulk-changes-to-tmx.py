@@ -88,11 +88,10 @@ def inspect_segments(input_file):
 
 def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_of_tu):
     new_segment_text = segment_text
+    changes_made_now = False
     for to_check_substring in regex_substrings_to_change:
-        changes_made_now = False
         if (language == to_check_substring[0] and (re.search(to_check_substring[1], segment_text) != None)):
             retain_copy_of_tu = True
-            changes_made_now = True
             new_segment_text = re.sub(to_check_substring[1], to_check_substring[2], new_segment_text)
 
     if (changes_made_now):
