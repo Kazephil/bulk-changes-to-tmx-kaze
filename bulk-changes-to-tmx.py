@@ -111,7 +111,7 @@ def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_o
             if (change_changeid):
                 copy_of_tu[x].set('creationid', change_changeid)
 
-    if (changes_made_now or retain_copy_of_tu):        
+    if (retain_copy_of_tu):        
         return True
     else:
         return False
