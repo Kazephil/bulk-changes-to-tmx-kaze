@@ -25,31 +25,37 @@ change_changeid = None
 
 regex_substrings_to_change = [
     ["en-GB", r"\bC\b", "D", False],
-    ["nl-NL", r"\bC\b", "D", True] # Don't forget to add a comma if you have more elements!
+    [
+        "nl-NL",
+        r"\bC\b",
+        "D",
+        True,
+    ],  # Don't forget to add a comma if you have more elements!
 ]
 
 ###########################################################################################################
 ###########################################################################################################
 
 
-import xml.etree.ElementTree as ET
-import os
-import re
 import copy
+import re
+
 from datetime import datetime
+from pathlib import Path
+from lxml import etree as et
 
 
-def select_files():
-    os.chdir("input")
-    for file in os.listdir():
-        if file.endswith(".tmx"):
-            inspect_segments(file)
-        else:
-            print('"{}" is not a .tmx file; it will be ignored.'.format(file))
+def get_tmx_files():
+    input_path = Path.cwd() / "input"
+    tmx_files = list(input_path.glob("*.tmx"))
+    if tmx_files:
+        return tmx_files
+    else:
+        print("No TMX files found in the 'input' folder.")
 
 
 def inspect_segments(input_file):
-    tree = ET.parse(input_file)
+    tree = et.parse(input_file)
     body = tree.getroot()[1]
     tree.getroot().attrib["version"] = "1.4"
     alternative_translations_comment_inserted = False
@@ -58,63 +64,81 @@ def inspect_segments(input_file):
         position = position + 1
         copy_of_tu = copy.deepcopy(tu)
         retain_copy_of_tu = False
-        for x in range (tu.__len__()):
-            if ((not alternative_translations_comment_inserted) and tu[x].tag == "prop"):
-                alternative_translations_comment = ET.Comment("Alternative translations") ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
+        for x in range(tu.__len__()):
+            if (not alternative_translations_comment_inserted) and tu[x].tag == "prop":
+                alternative_translations_comment = et.Comment(
+                    "Alternative translations"
+                )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
                 body.insert(position - 1, alternative_translations_comment)
                 alternative_translations_comment_inserted = True
-            if (tu[x].tag == "tuv"):
-                for y in range (tu[x].__len__()):
-                    if (tu[x][y].tag == "seg"):
-                        retain_copy_of_tu = bulk_change_segments(tu[x].attrib["lang"], tu[x][y].text, copy_of_tu, x, y, retain_copy_of_tu)
+            if tu[x].tag == "tuv":
+                for y in range(tu[x].__len__()):
+                    if tu[x][y].tag == "seg":
+                        retain_copy_of_tu = bulk_change_segments(
+                            tu[x].attrib["lang"],
+                            tu[x][y].text,
+                            copy_of_tu,
+                            x,
+                            y,
+                            retain_copy_of_tu,
+                        )
 
         if retain_copy_of_tu:
             body.append(copy_of_tu)
-        
+
         if retain_copy_of_tu and remove_old_segments:
             body.remove(tu)
-    
-    default_translations_comment = ET.Comment("Default translations") ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
+
+    default_translations_comment = et.Comment(
+        "Default translations"
+    )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
     body.insert(0, default_translations_comment)
 
-    os.chdir("../output")
-    with open(input_file, 'wb') as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx11.dtd">'.encode('utf8'))
-        tree.write(f, 'utf-8')
-    
-    print('Bulk changes in file "{}" have been done.'.format(input_file))
-    os.chdir("../input")
+    output_path = Path.cwd() / "/output"
+    with open(input_file, "wb") as f:
+        f.write(
+            '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx11.dtd">'.encode(
+                "utf8"
+            )
+        )
+        tree.write(f, "utf-8")
+
+    print(f"Bulk changes have been made to the {input_file} file.")
 
 
 def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_of_tu):
     new_segment_text = segment_text
     changes_made_now = False
     for to_check_substring in regex_substrings_to_change:
-        if (language == to_check_substring[0] and (re.search(to_check_substring[1], segment_text) != None)):
+        if language == to_check_substring[0] and (
+            re.search(to_check_substring[1], segment_text) != None
+        ):
             retain_copy_of_tu = True
             changes_made_now = True
-            new_segment_text = re.sub(to_check_substring[1], to_check_substring[2], new_segment_text)
+            new_segment_text = re.sub(
+                to_check_substring[1], to_check_substring[2], new_segment_text
+            )
 
-    if (changes_made_now):
+    if changes_made_now:
         copy_of_tu[x][y].text = new_segment_text
-        if (to_check_substring[3]):
-            if (change_creationdate):
+        if to_check_substring[3]:
+            if change_creationdate:
                 now = datetime.now()
-                nowstring = now.strftime('%Y%m%dT%H%M%SZ')
-                copy_of_tu[x].set('creationdate', nowstring)
-            if (change_changedate):
+                nowstring = now.strftime("%Y%m%dT%H%M%SZ")
+                copy_of_tu[x].set("creationdate", nowstring)
+            if change_changedate:
                 now = datetime.now()
-                nowstring = now.strftime('%Y%m%dT%H%M%SZ')
-                copy_of_tu[x].set('changedate', nowstring)
-            if (change_creationid):
-                copy_of_tu[x].set('creationid', change_creationid)
-            if (change_changeid):
-                copy_of_tu[x].set('creationid', change_changeid)
-            
+                nowstring = now.strftime("%Y%m%dT%H%M%SZ")
+                copy_of_tu[x].set("changedate", nowstring)
+            if change_creationid:
+                copy_of_tu[x].set("creationid", change_creationid)
+            if change_changeid:
+                copy_of_tu[x].set("creationid", change_changeid)
+
         return True
     else:
         return False
 
-    
+
 if __name__ == "__main__":
-    select_files()
+    input_tmx_files = get_tmx_files()
