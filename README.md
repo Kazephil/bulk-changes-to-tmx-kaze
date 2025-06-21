@@ -1,6 +1,9 @@
 # bulk-changes-to-tmx
 This is a simple code to make bulk changes to a .tmx translation memory.
 
+## Used tactic
+The code goes through the xml-based .tmx file, and inspects all `<tuv>` elements. It checks them against regex substrings put in by the user in the proper variable, with a distinction between source and target language elements. The code also offers the option to edit some of the attributes of `<tuv>` elements for a target language.
+
 ## Requirements
 ### Python virtual environment
 A "virtual environment" is recommended; I trust everyone's capabilities of finding out how that works. I don't think any dependencies need to be installed, but if some do, again: the answer is somewhere out there, on the internet.
@@ -14,8 +17,8 @@ Only files with the extension .txm will be handled. Obviously, the files need to
 I wrote the script based on a .tmx file made by OmegaT with a syntax similar to this:
 ```
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE tmx SYSTEM "tmx11.dtd">
-<tmx version="1.1">
+<!DOCTYPE tmx SYSTEM "tmx14.dtd">
+<tmx version="1.4">
   <header creationtool="OmegaT" o-tmf="OmegaT TMX" adminlang="EN-US" datatype="plaintext" creationtoolversion="6.0.1_0_42ef0143" segtype="sentence" srclang="en-GB"/>
   <body>
 <!-- Default translations -->
@@ -23,7 +26,7 @@ I wrote the script based on a .tmx file made by OmegaT with a syntax similar to 
       <tuv lang="en-GB">
         <seg>Hello World!</seg>
       </tuv>
-      <tuv lang="nl-NL" changeid="Erik DB" changedate="20210117T112458Z" creationid="Erik DB" creationdate="20210117T112458Z">
+      <tuv lang="nl-NL" changeid="John Doe" changedate="20210117T112458Z" creationid="John Doe" creationdate="20210117T112458Z">
         <seg>Dag wereld!</seg>
       </tuv>
     </tu>
@@ -63,10 +66,10 @@ change_creationdate = False
 change_changedate = True
 
 # Set to "'John Doe'" (WITH quotation marks) if you want to change these attributes to "John Doe",
-# or set to "None" (WITHOUT quotation marks) if you want the attributes unchanged:
+# or set to "False" (WITHOUT quotation marks) if you want the attributes unchanged:
 
-change_creationid = None
-change_changeid = None
+change_creationid = False
+change_changeid = False
 ```
 
 ### regex_substrings_to_change
@@ -76,7 +79,7 @@ Remember that every line changes the string, so if you want to change "strawberr
 
 Reading up on regex is a good idea, so you know how to filter out instances where C is not part of a word.
 
-If you want to change `C` to `D` in the segments in the language `en-GB`, and the above examples of strawberries and apples this is what the list should look like:
+If you want to change `C` to `D` in the segments in the languages `en-GB` and `nl-NL`, and the above examples of strawberries and apples this is what the list should look like:
 ```
 regex_substrings_to_change = [
     ["en-GB", r"\bC\b", "D", False],
