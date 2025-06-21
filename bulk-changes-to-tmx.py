@@ -14,10 +14,10 @@ change_creationdate = False
 change_changedate = True
 
 # Set to "'John Doe'" (WITH quotation marks) if you want to change these attributes to "John Doe",
-# or set to "None" (WITHOUT quotation marks) if you want the attributes unchanged:
+# or set to "False" (WITHOUT quotation marks) if you want the attributes unchanged:
 
-change_creationid = None
-change_changeid = None
+change_creationid = False
+change_changeid = False
 
 ## Remember that every line changes the string, so if you want to change "strawberry" to "apple",
 # and "strawberries" to "apples", changing the first before the second is a bad idea.
@@ -71,15 +71,15 @@ def inspect_segments(input_file):
         if retain_copy_of_tu:
             body.append(copy_of_tu)
         
-        if retain_copy_of_tu and remove_old_segments:
-            body.remove(tu)
+            if remove_old_segments:
+                body.remove(tu)
     
     default_translations_comment = ET.Comment("Default translations") ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
     body.insert(0, default_translations_comment)
 
     os.chdir("../output")
     with open(input_file, 'wb') as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx11.dtd">'.encode('utf8'))
+        f.write('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx14.dtd">'.encode('utf8'))
         tree.write(f, 'utf-8')
     
     print('Bulk changes in file "{}" have been done.'.format(input_file))
@@ -110,7 +110,8 @@ def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_o
                 copy_of_tu[x].set('creationid', change_creationid)
             if (change_changeid):
                 copy_of_tu[x].set('creationid', change_changeid)
-            
+
+    if (changes_made_now or retain_copy_of_tu):        
         return True
     else:
         return False
