@@ -25,7 +25,11 @@ change_changeid = False
 
 regex_substrings_to_change = [
     ["en-GB", r"\bC\b", "D", False],
-    ["nl-NL", r"\bC\b", "D", True] # Don't forget to add a comma if you have more elements!
+    ["nl-NL", r"\bC\b", "D", True],
+    ["en-GB", r"strawberries", "apples", False],
+    ["nl-NL", r"aardbeien", "appels", True],
+    ["en-GB", r"strawberry", "apple", False],
+    ["nl-NL", r"aardbei", "appel", True] # Don't forget to add a comma if you have more elements!
 ]
 
 ###########################################################################################################
@@ -54,25 +58,35 @@ def inspect_segments(input_file):
     tree.getroot().attrib["version"] = "1.4"
     alternative_translations_comment_inserted = False
     position = 0
+    to_insert_copies_of_tu = []
     for tu in body:
         position = position + 1
         copy_of_tu = copy.deepcopy(tu)
         retain_copy_of_tu = False
+        this_is_an_alternative_translation = False
         for x in range (tu.__len__()):
-            if ((not alternative_translations_comment_inserted) and tu[x].tag == "prop"):
-                alternative_translations_comment = ET.Comment("Alternative translations") ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
-                body.insert(position - 1, alternative_translations_comment)
-                alternative_translations_comment_inserted = True
+            if (tu[x].tag == "prop"):
+                this_is_an_alternative_translation = True
+                if (not alternative_translations_comment_inserted):
+                    alternative_translations_comment = ET.Comment("Alternative translations") ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
+                    body.insert(position - 1, alternative_translations_comment)
+                    alternative_translations_comment_inserted = True
             if (tu[x].tag == "tuv"):
                 for y in range (tu[x].__len__()):
                     if (tu[x][y].tag == "seg"):
                         retain_copy_of_tu = bulk_change_segments(tu[x].attrib["lang"], tu[x][y].text, copy_of_tu, x, y, retain_copy_of_tu)
 
         if retain_copy_of_tu:
-            body.append(copy_of_tu)
+            if (this_is_an_alternative_translation):
+                body.append(copy_of_tu)
+            else:
+                to_insert_copies_of_tu.append(copy_of_tu)
         
             if remove_old_segments:
                 body.remove(tu)
+    
+    for to_insert_copy_of_tu in to_insert_copies_of_tu:
+        body.insert(0, to_insert_copy_of_tu)
     
     default_translations_comment = ET.Comment("Default translations") ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
     body.insert(0, default_translations_comment)
