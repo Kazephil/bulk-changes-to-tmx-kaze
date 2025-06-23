@@ -29,7 +29,12 @@ regex_substrings_to_change = [
     ["en-GB", r"strawberries", "apples", False],
     ["nl-NL", r"aardbeien", "appels", True],
     ["en-GB", r"strawberry", "apple", False],
-    ["nl-NL", r"aardbei", "appel", True],  # Don't forget to add a comma if you have more elements!
+    [
+        "nl-NL",
+        r"aardbei",
+        "appel",
+        True,
+    ],  # Don't forget to add a comma if you have more elements!
 ]
 
 ###########################################################################################################
@@ -41,7 +46,7 @@ import re
 
 from datetime import datetime
 from pathlib import Path
-from lxml import etree as et
+from lxml import etree as ET
 
 
 def get_tmx_files():
@@ -54,7 +59,7 @@ def get_tmx_files():
 
 
 def inspect_segments(input_file):
-    tree = et.parse(input_file)
+    tree = ET.parse(input_file)
     body = tree.getroot()[1]
     tree.getroot().attrib["version"] = "1.4"
     alternative_translations_comment_inserted = False
@@ -78,7 +83,12 @@ def inspect_segments(input_file):
                 for y in range(tu[x].__len__()):
                     if tu[x][y].tag == "seg":
                         retain_copy_of_tu = bulk_change_segments(
-                            tu[x].attrib["lang"], tu[x][y].text, copy_of_tu, x, y, retain_copy_of_tu
+                            tu[x].attrib["lang"],
+                            tu[x][y].text,
+                            copy_of_tu,
+                            x,
+                            y,
+                            retain_copy_of_tu,
                         )
 
         if retain_copy_of_tu:
@@ -100,7 +110,11 @@ def inspect_segments(input_file):
 
     output_path = Path.cwd() / "/output"
     with open(input_file, "wb") as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx11.dtd">'.encode("utf8"))
+        f.write(
+            '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx11.dtd">'.encode(
+                "utf8"
+            )
+        )
         tree.write(f, "utf-8")
 
     print(f"Bulk changes have been made to the {input_file} file.")
@@ -110,10 +124,14 @@ def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_o
     new_segment_text = segment_text
     changes_made_now = False
     for to_check_substring in regex_substrings_to_change:
-        if language == to_check_substring[0] and (re.search(to_check_substring[1], segment_text) != None):
+        if language == to_check_substring[0] and (
+            re.search(to_check_substring[1], segment_text) != None
+        ):
             retain_copy_of_tu = True
             changes_made_now = True
-            new_segment_text = re.sub(to_check_substring[1], to_check_substring[2], new_segment_text)
+            new_segment_text = re.sub(
+                to_check_substring[1], to_check_substring[2], new_segment_text
+            )
 
     if changes_made_now:
         copy_of_tu[x][y].text = new_segment_text
