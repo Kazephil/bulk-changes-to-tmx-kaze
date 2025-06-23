@@ -24,15 +24,15 @@ change_changeid = False
 # The last element of each list is "True", if it is for a target languague.
 
 regex_substrings_to_change = [
-    ["en-GB", r"\bC\b", "D", False],
-    ["nl-NL", r"\bC\b", "D", True],
-    ["en-GB", r"strawberries", "apples", False],
-    ["nl-NL", r"aardbeien", "appels", True],
-    ["en-GB", r"strawberry", "apple", False],
+    ["en-CA", r"\bC\b", "D", False],
+    ["fr-CA", r"\bC\b", "D", True],
+    ["en-CA", r"tea", "juice", False],
+    ["fr-CA", r"thé", "jus", True],
+    ["en-CA", r"'", "ʼ", False],
     [
-        "nl-NL",
-        r"aardbei",
-        "appel",
+        "fr-CA",
+        r"'",
+        "ʼ",
         True,
     ],  # Don't forget to add a comma if you have more elements!
 ]
@@ -48,6 +48,8 @@ from datetime import datetime
 from pathlib import Path
 from lxml import etree as ET
 
+XMLLANG = ET.QName("http://www.w3.org/XML/1998/namespace", "lang")
+
 
 def get_tmx_files():
     input_path = Path.cwd() / "input"
@@ -61,7 +63,9 @@ def get_tmx_files():
 def inspect_segments(input_file):
     tree = ET.parse(input_file)
     body = tree.getroot()[1]
-    tree.getroot().attrib["version"] = "1.4"
+    version = tree.getroot().attrib.get("version")
+    LANG = XMLLANG if version == "1.4" else "lang"
+
     alternative_translations_comment_inserted = False
     position = 0
     to_insert_copies_of_tu = []
@@ -83,7 +87,7 @@ def inspect_segments(input_file):
                 for y in range(tu[x].__len__()):
                     if tu[x][y].tag == "seg":
                         retain_copy_of_tu = bulk_change_segments(
-                            tu[x].attrib["lang"],
+                            tu[x].attrib[LANG],
                             tu[x][y].text,
                             copy_of_tu,
                             x,
@@ -108,16 +112,17 @@ def inspect_segments(input_file):
     )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
     body.insert(0, default_translations_comment)
 
-    output_path = Path.cwd() / "/output"
+    os.chdir("../output")
     with open(input_file, "wb") as f:
         f.write(
-            '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx11.dtd">'.encode(
+            '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx14.dtd">'.encode(
                 "utf8"
             )
         )
         tree.write(f, "utf-8")
 
-    print(f"Bulk changes have been made to the {input_file} file.")
+    print('Bulk changes in file "{}" have been done.'.format(input_file))
+    os.chdir("../input")
 
 
 def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_of_tu):
@@ -156,4 +161,4 @@ def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_o
 
 
 if __name__ == "__main__":
-    input_tmx_files = get_tmx_files()
+    select_files()
