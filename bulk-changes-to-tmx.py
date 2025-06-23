@@ -29,13 +29,8 @@ regex_substrings_to_change = [
     ["en-CA", r"tea", "juice", False],
     ["fr-CA", r"thé", "jus", True],
     ["en-CA", r"'", "ʼ", False],
-    [
-        "fr-CA",
-        r"'",
-        "ʼ",
-        True,
-    ],  # Don't forget to add a comma if you have more elements!
-]
+    ["fr-CA", r"'", "ʼ", True,]]
+    # Don't forget to add a comma if you have more elements!
 
 ###########################################################################################################
 ###########################################################################################################
