@@ -38,6 +38,7 @@ regex_substrings_to_change = [
 
 import copy
 import re
+import sys
 
 from datetime import datetime
 from pathlib import Path
@@ -45,21 +46,23 @@ from lxml import etree as ET
 
 XMLLANG = ET.QName("http://www.w3.org/XML/1998/namespace", "lang")
 
-
 def get_tmx_files():
     input_path = Path.cwd() / "input"
-    tmx_files = list(input_path.glob("*.tmx"))
-    if tmx_files:
-        return tmx_files
-    else:
-        print("No TMX files found in the 'input' folder.")
+    tmx_to_process = list(input_path.glob("*.tmx"))
+    
+    return tmx_to_process
 
 
-def inspect_segments(input_file):
-    tree = ET.parse(input_file)
-    body = tree.getroot()[1]
-    version = tree.getroot().attrib.get("version")
-    LANG = XMLLANG if version == "1.4" else "lang"
+def parse_tmx(input_file):
+    parser = ET.XMLParser(remove_blank_text=True)
+    tree = ET.parse(input_file, parser)
+    
+    return tree
+
+def inspect_segments(tmx_tree):
+    body = tmx_tree.getroot()[1]
+    version = tmx_tree.getroot().attrib.get("version")
+    lang = XMLLANG if version == "1.4" else "lang"
 
     alternative_translations_comment_inserted = False
     position = 0
@@ -82,7 +85,7 @@ def inspect_segments(input_file):
                 for y in range(tu[x].__len__()):
                     if tu[x][y].tag == "seg":
                         retain_copy_of_tu = bulk_change_segments(
-                            tu[x].attrib[LANG],
+                            tu[x].attrib[lang],
                             tu[x][y].text,
                             copy_of_tu,
                             x,
@@ -106,18 +109,6 @@ def inspect_segments(input_file):
         "Default translations"
     )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
     body.insert(0, default_translations_comment)
-
-    os.chdir("../output")
-    with open(input_file, "wb") as f:
-        f.write(
-            '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE tmx SYSTEM "tmx14.dtd">'.encode(
-                "utf8"
-            )
-        )
-        tree.write(f, "utf-8")
-
-    print('Bulk changes in file "{}" have been done.'.format(input_file))
-    os.chdir("../input")
 
 
 def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_of_tu):
@@ -154,6 +145,34 @@ def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_o
     else:
         return False
 
+def write_output_tmx(tmx_file, output_tree):
+    output_file = Path(f"./output/changed_{tmx_file.name}")
+    output_tree.write(output_file, encoding="utf-8",
+                      xml_declaration=True, pretty_print=True)
+
 
 if __name__ == "__main__":
-    select_files()
+    # Retrieve TMX files from the input folder
+    tmx_files = get_tmx_files()
+    if tmx_files:
+        # Process each TMX file
+        for tmx_file in tmx_files:
+            current_tmx = parse_tmx(tmx_file)            
+
+            # Process the segments in the TMX file
+            inspect_segments(current_tmx)
+
+            # Prepare final output TMX document
+            doctype = current_tmx.docinfo.doctype
+
+            # Write output TMX file to output directory
+            write_output_tmx(tmx_file, current_tmx)
+
+            # Inform user that the changes have been made
+            print(f"Bulk changes have been applied to {tmx_file.name}.")
+
+    else:
+        print("No TMX files found in the 'input' folder.")
+        sys.exit()
+
+
