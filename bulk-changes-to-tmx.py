@@ -59,16 +59,26 @@ def parse_tmx(input_file):
     
     return tree
 
+
+def is_alternative_translation(current_tu):
+    prop_types = ["file", "id", "prev", "next"]
+    prop = current_tu.find("prop")
+    return prop is not None and prop.attrib.get('type') in prop_types
+
+
 def inspect_segments(tmx_tree):
     body = tmx_tree.getroot()[1]
     version = tmx_tree.getroot().attrib.get("version")
     lang = XMLLANG if version == "1.4" else "lang"
+    
+    default_translations_comment = body.xpath('//comment()')[0]
+    alternative_translations_comment = body.xpath('//comment()')[1]
 
-    alternative_translations_comment_inserted = False
-    position = 0
+    # alternative_translations_comment_inserted = False
+    # position = 0
     to_insert_copies_of_tu = []
-    for tu in body:
-        position = position + 1
+    for tu in body.findall("tu"):
+        # position = position + 1
         copy_of_tu = copy.deepcopy(tu)
         retain_copy_of_tu = False
         this_is_an_alternative_translation = False
