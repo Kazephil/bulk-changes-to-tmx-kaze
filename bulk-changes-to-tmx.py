@@ -56,7 +56,7 @@ def inspect_segments(input_file):
     tree = ET.parse(input_file)
     body = tree.getroot()[1]
     version = tree.getroot().attrib.get("version")
-    LANG = XMLLANG if version == "1.4" else "lang"
+    lang = XMLLANG if version == "1.4" else "lang"
 
     alternative_translations_comment_inserted = False
     position = 0
@@ -74,12 +74,13 @@ def inspect_segments(input_file):
                         "Alternative translations"
                     )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
                     body.insert(position - 1, alternative_translations_comment)
+                    alternative_translations_comment.tail = "\n    "
                     alternative_translations_comment_inserted = True
             if tu[x].tag == "tuv":
                 for y in range(tu[x].__len__()):
                     if tu[x][y].tag == "seg":
                         retain_copy_of_tu = bulk_change_segments(
-                            tu[x].attrib[LANG], tu[x][y].text, copy_of_tu, x, y, retain_copy_of_tu
+                            tu[x].attrib[lang], tu[x][y].text, copy_of_tu, x, y, retain_copy_of_tu
                         )
 
         if retain_copy_of_tu:
@@ -98,6 +99,7 @@ def inspect_segments(input_file):
         "Default translations"
     )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
     body.insert(0, default_translations_comment)
+    default_translations_comment.tail = "\n    "
 
     os.chdir("../output")
     with open(input_file, 'wb') as f:
