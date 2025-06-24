@@ -24,8 +24,6 @@ change_changeid = False
 # The last element of each list is "True", if it is for a target languague.
 
 regex_substrings_to_change = [
-    ["en-CA", r"\bC\b", "D", False],
-    ["fr-CA", r"\bC\b", "D", True],
     ["en-CA", r"tea", "juice", False],
     ["fr-CA", r"thé", "jus", True],
     ["en-CA", r"'", "ʼ", False],
