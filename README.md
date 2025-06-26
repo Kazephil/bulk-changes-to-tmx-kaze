@@ -15,7 +15,7 @@ The detection is done based on regex substrings. Again, the internet can tell yo
 Only files with the extension .txm will be handled. Obviously, the files need to be put in the directory `input`.
 
 I wrote the script based on a .tmx file made by OmegaT with a syntax similar to this:
-```
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE tmx SYSTEM "tmx14.dtd">
 <tmx version="1.4">
@@ -23,10 +23,10 @@ I wrote the script based on a .tmx file made by OmegaT with a syntax similar to 
   <body>
 <!-- Default translations -->
     <tu>
-      <tuv lang="en-GB">
+      <tuv xml:lang="en-GB">
         <seg>Hello World!</seg>
       </tuv>
-      <tuv lang="nl-NL" changeid="John Doe" changedate="20210117T112458Z" creationid="John Doe" creationdate="20210117T112458Z">
+      <tuv xml:lang="nl-NL" changeid="John Doe" changedate="20210117T112458Z" creationid="John Doe" creationdate="20210117T112458Z">
         <seg>Dag wereld!</seg>
       </tuv>
     </tu>
@@ -35,10 +35,10 @@ I wrote the script based on a .tmx file made by OmegaT with a syntax similar to 
       <prop type="file">Some_text.docx</prop>
       <prop type="prev">Hello World!</prop>
       <prop type="next">Bye!</prop>
-      <tuv lang="en-GB">
+      <tuv xml:lang="en-GB">
         <seg>Sun is shining! Let the vitamine C come to me!</seg>
       </tuv>
-      <tuv lang="nl-NL" changeid="Erik DB" changedate="20220306T093912Z" creationid="Erik DB" creationdate="20220306T093912Z">
+      <tuv xml:lang="nl-NL" changeid="Erik DB" changedate="20220306T093912Z" creationid="Erik DB" creationdate="20220306T093912Z">
         <seg>De zon schijnt! Laat die vitamine D maar komen!</seg>
       </tuv>
     </tu>
