@@ -59,7 +59,7 @@ If you want to **replace** segments, make sure `remove_old_segments` is `True`. 
 
 ### change_...
 The target language `<tuv>` tags have some attributes, which you may or may not want to alter:
-```
+```python
 # Set to "True" (WITHOUT quotation marks) if you want to update these two attributes to "now":
 
 change_creationdate = False
@@ -80,7 +80,7 @@ Remember that every line changes the string, so if you want to change "strawberr
 Reading up on regex is a good idea, so you know how to filter out instances where C is not part of a word.
 
 If you want to change `C` to `D` in the segments in the languages `en-GB` and `nl-NL`, and the above examples of strawberries and apples this is what the list should look like:
-```
+```python
 regex_substrings_to_change = [
     ["en-GB", r"\bC\b", "D", False],
     ["nl-NL", r"\bC\b", "D", True],
