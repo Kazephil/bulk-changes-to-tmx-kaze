@@ -8,14 +8,14 @@
 
 keep_original_segments = False
 
-## The target language "tuv" element has got a few attributes, which you may or may not want to alter.
-# Set to "True" (WITHOUT quotation marks) if you want to update these two attributes to "now":
+## The "<tuv>" element may have some attributes you may want to update.
+# Set the following variables to "True" (WITHOUT quotation marks) if you want to update these two attributes to the current date and time:
 
 change_creationdate = False
 change_changedate = True
 
 # Enter the ID you want to use in the quotes if you want to change the attribute.
-# In this example, the changeid attribute is changed to "Bulk Changer" by default.
+# The changeid attribute is changed to "Bulk Changer" by default.
 
 new_creationid = ""
 new_changeid = "Bulk Changer"
