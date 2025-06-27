@@ -1,92 +1,89 @@
 # bulk-changes-to-tmx
-This is a simple code to make bulk changes to a .tmx translation memory.
+This simple script offers an alternative approach to the [original script](https://github.com/ErikDB87/bulk-changes-to-tmx) that makes bulk changes to a .tmx file.
 
-## Used tactic
-The code goes through the xml-based .tmx file, and inspects all `<tuv>` elements. It checks them against regex substrings put in by the user in the proper variable, with a distinction between source and target language elements. The code also offers the option to edit some of the attributes of `<tuv>` elements for a target language.
+## Approach
+The code searches through all `<seg>` elements of each `.tmx` file in the `input` subdirectory of the script and applies the search and replace pattern defined, on a per-language basis, by the user in the appropriate variable.
+
+### Differences from the original script
+- The script replaces `xml.etree.Element` tree with the third-party `lxml` library.
+  - Comments in the XML file, removing the need to insert them manually and eliminating the need for code to identify alternative translations.
+  - The ability to retrieve parent elements makes it possible to work directly with `<seg>` elements without the need to explicitly loop through all `<tuv>` elements first.
+  - Eliminate dependency on OmegaT-specific aspects of the TMX file structure.
+- File and path handling now uses the `pathlib` library.
+  - The script now first builds a list of TMX files, and exits with an error message if there are no TMX files in the input subdirectory.
+- Regex patterns are now stored in a dictionary using the language codes as the keys to avoid the need to repead the language for every pattern.
+  - The search and replace patterns are now stored as a list of tuples 
+  - The True/False flag has been removed.
+- Added logic to handle both older TMX versions (1.1 and 1.2) that used a the `@lang` attribute and newer ones (1.3 and 1.4) that use the `@xml:lang` attribute for language codes.
+- General reorganization into smaller, more specific functions.
+  - Move TMX parsing to a separate function.
+  - Move file writing logic to a separate function.
+- Text replacement works by first building a list of segments with a match and their corresponding patterns. It then loops through that list and applies the replacement pattern to that segment.
+  - This means that each match is only replaced once in the original segment, and later replacement patterns are not applied to modified segments.  
+  For example, with the following patterns: `"en-CA": [(r"\btea\b", "coffee"), ("\bcoffee\b", "Red Bull")]`
+
+    | Original TMX segment   | Output TMX segment      |
+    | ---------------------- | ----------------------- |
+    | "I like tea"           | "I like coffee"         |
+    | "I need more coffee!"  | "I need more Red Bull!" |
+
+    The script does not loop back to change the new instance of "coffee" to "Red Bull" in the modified "I like coffee" segment.
 
 ## Requirements
 ### Python virtual environment
 A "virtual environment" is recommended; I trust everyone's capabilities of finding out how that works. I don't think any dependencies need to be installed, but if some do, again: the answer is somewhere out there, on the internet.
 
+### lxml
+Available as a package on PyPI.
+
 ### Regex
 The detection is done based on regex substrings. Again, the internet can tell you all about it.
 
 ## Input files
-Only files with the extension .txm will be handled. Obviously, the files need to be put in the directory `input`.
+Only files with the extension `.tmx` will be handled. The files must be in the `input` directory.
 
-I wrote the script based on a .tmx file made by OmegaT with a syntax similar to this:
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE tmx SYSTEM "tmx14.dtd">
-<tmx version="1.4">
-  <header creationtool="OmegaT" o-tmf="OmegaT TMX" adminlang="EN-US" datatype="plaintext" creationtoolversion="6.0.1_0_42ef0143" segtype="sentence" srclang="en-GB"/>
-  <body>
-<!-- Default translations -->
-    <tu>
-      <tuv lang="en-GB">
-        <seg>Hello World!</seg>
-      </tuv>
-      <tuv lang="nl-NL" changeid="John Doe" changedate="20210117T112458Z" creationid="John Doe" creationdate="20210117T112458Z">
-        <seg>Dag wereld!</seg>
-      </tuv>
-    </tu>
-<!-- Alternative translations -->
-    <tu>
-      <prop type="file">Some_text.docx</prop>
-      <prop type="prev">Hello World!</prop>
-      <prop type="next">Bye!</prop>
-      <tuv lang="en-GB">
-        <seg>Sun is shining! Let the vitamine C come to me!</seg>
-      </tuv>
-      <tuv lang="nl-NL" changeid="Erik DB" changedate="20220306T093912Z" creationid="Erik DB" creationdate="20220306T093912Z">
-        <seg>De zon schijnt! Laat die vitamine D maar komen!</seg>
-      </tuv>
-    </tu>
-  </body>
-</tmx>
-```
-
-If your file has a different structure, the code will most likely need to be altered.
+This version of the script should work on most TMX files However, the modification of date and id-related attributes is currently dependent on those attributes being present in a `<tuv>` element, and those elements will not be recognized or modified if they have been set at the `<tu>` element level instead.
 
 ## Output files
-I wasn't able to get the two comments (`<!-- Default translations -->`) and (`<!-- Alternative translations -->`) on exactly the same spot, they're part of the `<body>` element in the output file. I don't think that matters, since they're just comments. But I mention it for full disclosure. (And if anyone has a solution for it, please let me know.)
+The the modified TMX files are saved to the `output` directory, with `changed_` prepended to the original file name.
 
-Obviously, the files will appear in the directory `output`.
 
 ## Variables
-### remove_old_segments
-If you want to **replace** segments, make sure `remove_old_segments` is `True`. If it is `False`, the new segments will simply be added to the existing memory.
+### *keep_original_segments*
+The original `remove_old_segments` has been renamed `keep_original_segments`, and set to `False` by default, overwriting the original segment with the replacement pattern. If set to `True`, a `<tu>` element with the original segments will also be kept in the memory along with the `<tu>` containing the modified segments.
 
-### change_...
-The target language `<tuv>` tags have some attributes, which you may or may not want to alter:
-```
-# Set to "True" (WITHOUT quotation marks) if you want to update these two attributes to "now":
+### *change_changedate*, *change_creationdate*, *new_creationid*, *new_changeid*
+The TMX standard provides the optional `@creationdate`, `@changedate`,  `@creationid`, and `@changeid`, attributes. These variables let you optionally change the value of these attributes.
+
+Current limitation: The TMX standard allows these attributes in either `<tu>` or `<tuv`> elements, but the script currently assumes a TMX generated by OmegaT and only modifies attributes set at the `<tuv>` level.
+
+Set `change_creationdate` and `change_changedate` to `True` to update them to the current date and time, or to `False` to leave them unchanged:
+```python
+## The "<tuv>" element may have some attributes you may want to update.
+# Set the following variables to "True" (WITHOUT quotation marks) if you want to update these two attributes to the current date and time:
 
 change_creationdate = False
 change_changedate = True
+```
+Set the `new_creationid` and `new_changeid` to the desired ID to update them, or to `False` to leave them unchanged:
 
-# Set to "'John Doe'" (WITH quotation marks) if you want to change these attributes to "John Doe",
-# or set to "False" (WITHOUT quotation marks) if you want the attributes unchanged:
+```python
+# Enter the ID you want to use in the quotes if you want to change the attribute.
+# The changeid attribute is changed to "Bulk Changer" by default.
 
-change_creationid = False
-change_changeid = False
+new_creationid = ""
+new_changeid = "Bulk Changer"
 ```
 
-### regex_substrings_to_change
-This list should contain more lists, where the first element is the language of the `tuv` tag, the second element the regex substring that will be searched, the third element is the substring that will replace the substring that was found (i.e. the second element), the last element is "True" if if is for a source language (in which case attributes can be changed).
+### *replace_patterns*
+This is a dictionary that holds the regex for the search and replace patterns. The keys are the language codes, and the values are lists of tuples. Each tuple contains regexes for the search and replacement patterns:
 
-Remember that every line changes the string, so if you want to change "strawberry" to "apple", and "strawberries" to "apples", changing the first before the second will get you results like `strawberrys`.
-
-Reading up on regex is a good idea, so you know how to filter out instances where C is not part of a word.
-
-If you want to change `C` to `D` in the segments in the languages `en-GB` and `nl-NL`, and the above examples of strawberries and apples this is what the list should look like:
+```python
+replace_patterns = {
+    "en-CA": [(r"\btea\b", "coffee"), (r"'", "ʼ"), ("\bcoffee\b", "Red Bull")],
+    "fr-CA": [(r"\bthé\b", "café"), (r"'", "ʼ"), ("\bcafé\b", "Red Bull")],
+}
 ```
-regex_substrings_to_change = [
-    ["en-GB", r"\bC\b", "D", False],
-    ["nl-NL", r"\bC\b", "D", True],
-    ["en-GB", r"strawberries", "apples", False],
-    ["nl-NL", r"aardbeien", "appels", True],
-    ["en-GB", r"strawberry", "apple", False],
-    ["nl-NL", r"aardbei", "appel", True] # Don't forget to add a comma if you have more elements!
-]
-```
+In this example, the English pattern replaces "tea" with "coffee", and "coffee" with "Red Bull". Similarly, the French pattern replaces "thé" with "café", and "café" with "Red Bull". Both patterns also replace the straight apostrophe with the typographical curly apostrophe.
+
+Reading up on regex is a good idea, so you know how to, for example, replace "I like ***tea***" with "I like ***coffee***", without turning "That's a s***tea***l!" into "That's a s***coffee***l!".
