@@ -61,90 +61,64 @@ def parse_tmx(input_file):
     return tree
 
 
-def inspect_segments(tmx_tree):
-    body = tmx_tree.getroot()[1]
-    version = tmx_tree.getroot().attrib.get("version")
-    lang = XMLLANG if version == "1.4" else "lang"
-
-    default_translations_comment = body.xpath('//comment()')[0]
-    alternative_translations_comment = body.xpath('//comment()')[1]
-
-    # alternative_translations_comment_inserted = False
-    # position = 0
-    to_insert_copies_of_tu = []
-    for tu in body.findall("tu"):
-        # position = position + 1
-        copy_of_tu = copy.deepcopy(tu)
-        retain_copy_of_tu = False
-        this_is_an_alternative_translation = False
-        for x in range(tu.__len__()):
-            if tu[x].tag == "prop":
-                this_is_an_alternative_translation = True
-                if not alternative_translations_comment_inserted:
-                    alternative_translations_comment = ET.Comment(
-                        "Alternative translations"
-                    )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
-                    body.insert(position - 1, alternative_translations_comment)
-                    alternative_translations_comment_inserted = True
-            if tu[x].tag == "tuv":
-                for y in range(tu[x].__len__()):
-                    if tu[x][y].tag == "seg":
-                        retain_copy_of_tu = bulk_change_segments(
-                            tu[x].attrib[lang],
-                            tu[x][y].text,
-                            copy_of_tu,
-                            x,
-                            y,
-                            retain_copy_of_tu,
-                        )
-
-        if retain_copy_of_tu:
-            if this_is_an_alternative_translation:
-                body.append(copy_of_tu)
-            else:
-                to_insert_copies_of_tu.append(copy_of_tu)
-
-            if remove_old_segments:
-                body.remove(tu)
-
-    for to_insert_copy_of_tu in to_insert_copies_of_tu:
-        body.insert(0, to_insert_copy_of_tu)
-
-    default_translations_comment = ET.Comment(
-        "Default translations"
-    )  ## Sadly, these comments are not at the root level, but I couldn't figure out how to do that.
-    body.insert(0, default_translations_comment)
+def retain_original_tus(tus):
+    for tu in target_tus:
+        original_tu = copy.deepcopy(tu)
+        tu.addprevious(original_tu)
 
 
-def bulk_change_segments(language, segment_text, copy_of_tu, x, y, retain_copy_of_tu):
-    new_segment_text = segment_text
-    changes_made_now = False
-    for to_check_substring in regex_substrings_to_change:
-        if language == to_check_substring[0] and (re.search(to_check_substring[1], segment_text) != None):
-            retain_copy_of_tu = True
-            changes_made_now = True
-            new_segment_text = re.sub(to_check_substring[1], to_check_substring[2], new_segment_text)
+def inspect_segments(tmx):
 
-    if changes_made_now:
-        copy_of_tu[x][y].text = new_segment_text
-        if to_check_substring[3]:
+    lang_attribute = (
+        ET.QName("http://www.w3.org/XML/1998/namespace", "lang")
+        if tmx.attrib.get("version") in ["1.3", "1.4"]
+        else "lang"
+    )
+
+    segments = tmx.xpath("//seg")
+    segment_updates = []
+
+    for segment in segments:
+        segment_language = segment.getparent().attrib.get(lang_attribute)
+
+        for pattern in replace_patterns[segment_language]:
+            if re.search(pattern[0], segment.text):
+                segment_updates.append((segment, (pattern[0], pattern[1])))
+
+    return segment_updates
+
+
+def modify_segments(updates):
+    modifiable_attributes = ["creationdate", "changedate", "creationid", "changeid"]
+
+    for update in updates:
+        segment, patterns = update
+        tuv = segment.getparent()
+        attributes = [a for a in tuv.keys() if a in modifiable_attributes]
+
+        print(f"Replacing {patterns[0]} with {patterns[1]} in {segment}.")
+        segment.text = re.sub(patterns[0], patterns[1], segment.text)
+
+        if attributes:
+            new_datetime = datetime.now().strftime("%Y%m%dT%H%M%SZ")
+
             if change_creationdate:
-                now = datetime.now()
-                nowstring = now.strftime("%Y%m%dT%H%M%SZ")
-                copy_of_tu[x].set("creationdate", nowstring)
-            if change_changedate:
-                now = datetime.now()
-                nowstring = now.strftime("%Y%m%dT%H%M%SZ")
-                copy_of_tu[x].set("changedate", nowstring)
-            if change_creationid:
-                copy_of_tu[x].set("creationid", change_creationid)
-            if change_changeid:
-                copy_of_tu[x].set("creationid", change_changeid)
+                print(f"Changing creationdate to {new_datetime}.")
+                tuv.attrib["creationdate"] = new_datetime
 
-    if retain_copy_of_tu:
-        return True
-    else:
-        return False
+            if change_changedate:
+                print(f"Changing changedate to {new_datetime}.")
+                tuv.attrib["changedate"] = new_datetime
+
+            if new_creationid:
+                print(f"Changing creationid to {new_creationid}.")
+                tuv.attrib["creationid"] = new_creationid
+
+            if new_creationid:
+                print(f"Changing changeid to {new_changeid}.")
+                tuv.attrib["changeid"] = new_changeid
+
+        print("\n")
 
 
 def write_output_tmx(tmx_file, output_tree):
@@ -161,10 +135,16 @@ if __name__ == "__main__":
             current_tmx = parse_tmx(tmx_file)
 
             # Process the segments in the TMX file
-            inspect_segments(current_tmx)
+            tmx = parse_tmx(test_tmx_string)
+            segments_to_change = inspect_segments(tmx)
+            target_tus = {seg[0].getparent().getparent() for seg in segments_to_change}
 
-            # Prepare final output TMX document
-            doctype = current_tmx.docinfo.doctype
+            # Retain original tus if specified
+            if keep_original_segments:
+                retain_original_tus(target_tus)
+
+            # Apply changes to segments
+            modify_segments(segments_to_change)
 
             # Write output TMX file to output directory
             write_output_tmx(tmx_file, current_tmx)
