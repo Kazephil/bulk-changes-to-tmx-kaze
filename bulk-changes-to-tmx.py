@@ -71,7 +71,7 @@ def inspect_segments(tmx):
 
     lang_attribute = (
         ET.QName("http://www.w3.org/XML/1998/namespace", "lang")
-        if tmx.attrib.get("version") in ["1.3", "1.4"]
+        if tmx.getroot().attrib.get("version") in ["1.3", "1.4"]
         else "lang"
     )
 
@@ -96,29 +96,22 @@ def modify_segments(updates):
         tuv = segment.getparent()
         attributes = [a for a in tuv.keys() if a in modifiable_attributes]
 
-        print(f"Replacing {patterns[0]} with {patterns[1]} in {segment}.")
         segment.text = re.sub(patterns[0], patterns[1], segment.text)
 
         if attributes:
             new_datetime = datetime.now().strftime("%Y%m%dT%H%M%SZ")
 
             if change_creationdate:
-                print(f"Changing creationdate to {new_datetime}.")
                 tuv.attrib["creationdate"] = new_datetime
 
             if change_changedate:
-                print(f"Changing changedate to {new_datetime}.")
                 tuv.attrib["changedate"] = new_datetime
 
             if new_creationid:
-                print(f"Changing creationid to {new_creationid}.")
                 tuv.attrib["creationid"] = new_creationid
 
             if new_creationid:
-                print(f"Changing changeid to {new_changeid}.")
                 tuv.attrib["changeid"] = new_changeid
-
-        print("\n")
 
 
 def write_output_tmx(tmx_file, output_tree):
@@ -135,8 +128,7 @@ if __name__ == "__main__":
             current_tmx = parse_tmx(tmx_file)
 
             # Process the segments in the TMX file
-            tmx = parse_tmx(test_tmx_string)
-            segments_to_change = inspect_segments(tmx)
+            segments_to_change = inspect_segments(current_tmx)
             target_tus = {seg[0].getparent().getparent() for seg in segments_to_change}
 
             # Retain original tus if specified
