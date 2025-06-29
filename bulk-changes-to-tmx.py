@@ -110,7 +110,7 @@ def modify_segments(updates):
             if new_creationid:
                 tuv.attrib["creationid"] = new_creationid
 
-            if new_creationid:
+            if new_changeid:
                 tuv.attrib["changeid"] = new_changeid
 
 
