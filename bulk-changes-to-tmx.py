@@ -1,14 +1,20 @@
 ###########################################################################################################
 ###########################################################################################################
-### Default parameters
-### Adjust these parameters to your situation:
+# Default parameters
+# Adjust these parameters to your situation:
 
-## Set to True if you want to leave the original segments instead of just replacing them in the memory.
+# Set to True if you want to leave the original segments instead of just replacing them in the memory.
 # If set to "False", the changed segments will simply replace the original ones.
 
+from lxml import etree as ET
+from pathlib import Path
+from datetime import datetime
+import sys
+import re
+import copy
 keep_original_segments = False
 
-## The "<tuv>" element may have some attributes you may want to update.
+# The "<tuv>" element may have some attributes you may want to update.
 # Set the following variables to "True" (WITHOUT quotation marks) if you want to update these two attributes to the current date and time:
 
 change_creationdate = False
@@ -20,7 +26,7 @@ change_changedate = True
 new_creationid = ""
 new_changeid = "Bulk Changer"
 
-## Add a "(search pattern, replacement pattern)" tuple to the list for each language.
+# Add a "(search pattern, replacement pattern)" tuple to the list for each language.
 # The original segments in the corresponding language are each matched to each search pattern
 # individually before making any replacements, so later entries in the list will not overwrite
 # earlier ones. For example, changing "tea" to "coffee", and then later changing "coffee" to
@@ -36,15 +42,6 @@ replace_patterns = {
 
 ###########################################################################################################
 ###########################################################################################################
-
-
-import copy
-import re
-import sys
-
-from datetime import datetime
-from pathlib import Path
-from lxml import etree as ET
 
 
 def get_tmx_files():
@@ -81,9 +78,10 @@ def inspect_segments(tmx):
     for segment in segments:
         segment_language = segment.getparent().attrib.get(lang_attribute)
 
-        for pattern in replace_patterns[segment_language]:
-            if re.search(pattern[0], segment.text):
-                segment_updates.append((segment, (pattern[0], pattern[1])))
+        if (segment_language in replace_patterns):
+            for pattern in replace_patterns[segment_language]:
+                if re.search(pattern[0], segment.text):
+                    segment_updates.append((segment, (pattern[0], pattern[1])))
 
     return segment_updates
 
